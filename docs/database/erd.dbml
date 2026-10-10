@@ -1,0 +1,329 @@
+// ============================================================
+// E-COMMERCE DRF API
+// OFFICIAL DATABASE CONTRACT
+// Status: FINAL CANDIDATE — mark LOCKED after team agreement
+// File: docs/database/erd.dbml
+//
+// Rules:
+// - Do not change this schema without team discussion and agreement.
+// - Product.discount is a percentage from 0 to 100 (e.g. 20 = 20%).
+// - If a product has variants, inventory is tracked per variant;
+//   otherwise products.stock is used.
+// - OrderItem fields preserve purchase-time snapshots.
+// - Implement constraints/business rules in Django where DBML cannot
+//   express them portably (e.g. CHECK discount between 0 and 100).
+// ============================================================
+
+// ACCOUNTS
+Table users {
+  id bigint [pk, increment]
+  email varchar(254) [unique, not null]
+  password varchar(128) [not null]
+  first_name varchar(150)
+  last_name varchar(150)
+  phone varchar(20)
+  is_active boolean [not null, default: true]
+  is_staff boolean [not null, default: false]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  indexes {
+    phone
+    is_active
+  }
+}
+
+Table addresses {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  province varchar(100) [not null]
+  city varchar(100) [not null]
+  address text [not null]
+  postal_code varchar(20) [not null]
+  is_default boolean [not null, default: false]
+  created_at datetime [not null]
+  indexes {
+    user_id
+    is_default
+  }
+}
+
+// CATALOG
+Table categories {
+  id bigint [pk, increment]
+  name varchar(150) [not null]
+  slug varchar(180) [unique, not null]
+  description text
+  parent_id bigint
+  is_active boolean [not null, default: true]
+  indexes {
+    parent_id
+    is_active
+  }
+}
+
+Table brands {
+  id bigint [pk, increment]
+  name varchar(150) [not null]
+  slug varchar(180) [unique, not null]
+  logo varchar(500)
+  is_active boolean [not null, default: true]
+  indexes {
+    is_active
+  }
+}
+
+Table products {
+  id bigint [pk, increment]
+  category_id bigint [not null]
+  brand_id bigint
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text
+  price decimal(12,2) [not null, default: 0]
+  // Percentage, not a currency amount. Enforce 0 <= discount <= 100.
+  discount decimal(5,2) [not null, default: 0]
+  // Used only when the product has no variants.
+  stock int [not null, default: 0]
+  is_active boolean [not null, default: true]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  indexes {
+    category_id
+    brand_id
+    is_active
+    created_at
+    price
+  }
+}
+
+Table product_images {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  image varchar(500) [not null]
+  is_primary boolean [not null, default: false]
+  indexes {
+    product_id
+    is_primary
+  }
+}
+
+Table product_variants {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  sku varchar(100) [unique, not null]
+  color varchar(50)
+  warranty varchar(100)
+  // Null means use the parent product's price.
+  price decimal(12,2)
+  // Used when the product has variants.
+  stock int [not null, default: 0]
+  is_active boolean [not null, default: true]
+  indexes {
+    product_id
+    is_active
+  }
+}
+
+Table reviews {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  user_id bigint [not null]
+  rating smallint [not null]
+  comment text
+  is_approved boolean [not null, default: false]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  indexes {
+    product_id
+    user_id
+    (user_id, product_id) [unique]
+  }
+}
+
+Table favorites {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  product_id bigint [not null]
+  created_at datetime [not null]
+  indexes {
+    (user_id, product_id) [unique]
+    product_id
+  }
+}
+
+// CART
+Table carts {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+}
+
+Table cart_items {
+  id bigint [pk, increment]
+  cart_id bigint [not null]
+  product_id bigint [not null]
+  variant_id bigint
+  quantity int [not null, default: 1]
+  indexes {
+    cart_id
+    product_id
+    variant_id
+    (cart_id, product_id, variant_id) [unique]
+  }
+  // Note: because variant_id is nullable, some SQL databases allow duplicate
+  // rows where variant_id is NULL despite the composite unique index. Enforce
+  // duplicate-item prevention in application logic or with DB-specific rules.
+}
+
+// ORDERS
+Table orders {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  address_id bigint [not null]
+  status varchar(30) [not null, note: 'pending / processing / shipped / delivered / cancelled']
+  payment_status varchar(30) [not null, note: 'pending / paid / failed / refunded']
+  subtotal decimal(12,2) [not null]
+  discount decimal(12,2) [not null, default: 0]
+  shipping_cost decimal(12,2) [not null, default: 0]
+  total_price decimal(12,2) [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  indexes {
+    user_id
+    address_id
+    status
+    payment_status
+    created_at
+  }
+}
+
+Table order_items {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  product_id bigint [not null]
+  variant_id bigint
+  // Snapshot values must not change when catalog data changes.
+  product_name varchar(255) [not null]
+  unit_price decimal(12,2) [not null]
+  discount decimal(12,2) [not null, default: 0]
+  quantity int [not null]
+  total_price decimal(12,2) [not null]
+  indexes {
+    order_id
+    product_id
+    variant_id
+  }
+}
+
+Table payments {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  method varchar(30) [not null, note: 'online / card_to_card / cash']
+  status varchar(30) [not null, note: 'pending / success / failed / refunded']
+  amount decimal(12,2) [not null]
+  transaction_id varchar(255)
+  paid_at datetime
+  created_at datetime [not null]
+  indexes {
+    order_id
+    status
+    transaction_id
+  }
+}
+
+// BLOG
+Table posts {
+  id bigint [pk, increment]
+  author_id bigint [not null]
+  title varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  content text [not null]
+  thumbnail varchar(500)
+  is_published boolean [not null, default: false]
+  published_at datetime
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  indexes {
+    author_id
+    is_published
+    published_at
+  }
+}
+
+Table comments {
+  id bigint [pk, increment]
+  post_id bigint [not null]
+  user_id bigint [not null]
+  content text [not null]
+  is_approved boolean [not null, default: false]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  indexes {
+    post_id
+    user_id
+    is_approved
+  }
+}
+
+// SUPPORT
+Table faqs {
+  id bigint [pk, increment]
+  question varchar(500) [not null]
+  answer text [not null]
+  is_active boolean [not null, default: true]
+  display_order int [not null, default: 0]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  indexes {
+    is_active
+    display_order
+  }
+}
+
+Table contact_messages {
+  id bigint [pk, increment]
+  user_id bigint
+  name varchar(150) [not null]
+  email varchar(254) [not null]
+  phone varchar(20)
+  subject varchar(255) [not null]
+  message text [not null]
+  is_read boolean [not null, default: false]
+  created_at datetime [not null]
+  indexes {
+    user_id
+    is_read
+    created_at
+  }
+}
+
+// RELATIONSHIPS
+Ref: users.id < addresses.user_id
+Ref: users.id - carts.user_id
+Ref: users.id < reviews.user_id
+Ref: users.id < favorites.user_id
+Ref: users.id < orders.user_id
+Ref: users.id < posts.author_id
+Ref: users.id < comments.user_id
+Ref: users.id < contact_messages.user_id
+
+Ref: categories.id < categories.parent_id
+Ref: categories.id < products.category_id
+Ref: brands.id < products.brand_id
+Ref: products.id < product_images.product_id
+Ref: products.id < product_variants.product_id
+Ref: products.id < reviews.product_id
+Ref: products.id < favorites.product_id
+
+Ref: carts.id < cart_items.cart_id
+Ref: products.id < cart_items.product_id
+Ref: product_variants.id < cart_items.variant_id
+
+Ref: orders.id < order_items.order_id
+Ref: products.id < order_items.product_id
+Ref: product_variants.id < order_items.variant_id
+Ref: orders.id < payments.order_id
+Ref: addresses.id < orders.address_id
+
+Ref: posts.id < comments.post_id
