@@ -160,9 +160,9 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Ecommerce API",
-    "DESCRIPTION": "API documentation for the ecommerce project",
-    "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-}
+# SPECTACULAR_SETTINGS = {
+#     "TITLE": "Ecommerce API",
+#     "DESCRIPTION": "API documentation for the ecommerce project",
+#     "VERSION": "1.0.0",
+#     "SERVE_INCLUDE_SCHEMA": False,
+# }
