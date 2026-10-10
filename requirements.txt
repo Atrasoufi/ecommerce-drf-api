@@ -1,11 +1,12 @@
 asgiref==3.12.1
 attrs==26.1.0
 Django==6.1.2
+django-cors-headers==4.9.0
 django-filter==26.2
 djangorestframework==3.18.3
 djangorestframework_simplejwt==5.5.1
-drf-spectacular==0.30.0
 dotenv==0.9.9
+drf-spectacular==0.30.0
 inflection==0.5.1
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
