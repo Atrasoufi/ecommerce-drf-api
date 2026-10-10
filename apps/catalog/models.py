@@ -1,6 +1,21 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 
+class Category(models.Model):
+    name = models.CharField(max_length=150)
+    slug = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    # parent = models.ForeignKey(
+    #     "self",
+    #     on_delete=models.CASCADE,
+    #     null=True,
+    #     blank=True,
+    #     related_name="children",
+    # )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
 
 class Discount_Type(models.Model):
      name = models.CharField(max_length=100)
@@ -27,7 +42,7 @@ class Products(models.Model):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(blank=True)
-    categories = models.ManyToManyField("Categories",)
+    categories = models.ManyToManyField(Category,)
     brand = models.ForeignKey("Brands", on_delete=models.SET_NULL,null=True)
     discount = models.ForeignKey(Discount,on_delete=models.DO_NOTHING)
     is_active = models.BooleanField(default=True)
@@ -62,21 +77,3 @@ class Product_Variants(models.Model):
 
 
 # Create your models here.
-
-
-
-class Category(models.Model):
-    name = models.CharField(max_length=150)
-    slug = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, null=True)
-    parent = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="children",
-    )
-    is_active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.name
