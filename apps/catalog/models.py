@@ -2,25 +2,33 @@ from django.db import models
 from django.core.validators import MinValueValidator
 
 
+class Discount_Type(models.Model):
+     name = models.CharField(max_length=100)
+     min_price = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+     is_active = models.BooleanField(default=True)
+
+     def __str__(self):
+        return self.name
+
 class Discount(models.Model):
     discount = models.CharField(max_length=50)
     value = models.PositiveIntegerField(default=0)
-    type = models.ForeignKey()
+    type = models.ForeignKey(Discount_Type,on_delete=models.CASCADE)
     max_use_all = models.PositiveIntegerField(default=0)
     max_use_user = models.PositiveIntegerField(default=0)
-    start_time = created_at = models.DateTimeField(null=True,blank=True)
-    finish_time = created_at = models.DateTimeField(null=True,blank=True)
+    start_time = models.DateTimeField(null=True,blank=True)
+    finish_time = models.DateTimeField(null=True,blank=True)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
-            return self.name
+            return self.discount
 
 class Products(models.Model):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(blank=True)
     categories = models.ManyToManyField("Categories",)
-    brand = models.ForeignKey("Brands", on_delete=models.SET_NULL)
+    brand = models.ForeignKey("Brands", on_delete=models.SET_NULL,null=True)
     discount = models.ForeignKey(Discount,on_delete=models.DO_NOTHING)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -42,8 +50,8 @@ class Product_Images(models.Model):
 
 class Product_Variants(models.Model):
     product = models.ForeignKey(Products,on_delete=models.CASCADE)
-    sku = models.CharField(max_length=100, unique=True)
-    color = models.CharField(max_length=50, unique=True)
+    sku = models.CharField(max_length=100)
+    color = models.CharField(max_length=50)
     warranty = models.CharField(max_length=100, unique=True)
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     stock = models.PositiveIntegerField(default=0)
