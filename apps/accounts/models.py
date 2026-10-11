@@ -28,16 +28,17 @@ def normalize_phone(phone):
 
 
 class CustomeManager(BaseUserManager):
-    def create_user(self, email, password, **kwargs):
+    def create_user(self, email, password,phone, **kwargs):
         if not email:
             return ValueError("email can not be empty...!")
         email = self.normalize_email(email)
-        user = self.model(email=email, **kwargs)
+        phone = normalize_phone(phone)
+        user = self.model(email=email,phone=phone, **kwargs)
         user.set_password(password)
         user.save()
         return user
 
-    def create_superuser(self, email, password, **kwargs):
+    def create_superuser(self, email, password, phone, **kwargs):
         kwargs.setdefault("is_staff", True)
         kwargs.setdefault("is_superuser", True)
         kwargs.setdefault("is_active", True)
@@ -47,7 +48,7 @@ class CustomeManager(BaseUserManager):
             raise ValueError("Superuser must have is_superuser=True.")
         if kwargs.get("is_active") is not True:
             raise ValueError("Superuser must have is_active=True.")
-        return self.create_user(email, password, **kwargs)
+        return self.create_user(email, password, phone, **kwargs)
 
 
 
@@ -61,6 +62,8 @@ class UserModel(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["phone"]
+
     objects = CustomeManager()
 
     def save(self, *args, **kwargs):
