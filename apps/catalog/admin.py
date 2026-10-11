@@ -6,6 +6,7 @@ from .models import (
     Product_Images,
     Product_Variants,
     Brands
+    Category
 )
 admin.site.register(Discount)
 admin.site.register(Discount_Type)
@@ -13,5 +14,7 @@ admin.site.register(Products)
 admin.site.register(Product_Images)
 admin.site.register(Product_Variants)
 admin.site.register(Brands)
+admin.site.register(Category)
+
 
 # Register your models here.
