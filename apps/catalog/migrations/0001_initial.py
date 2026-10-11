@@ -14,6 +14,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
+            name='Brand',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=255)),
+            ],
+        ),
+        migrations.CreateModel(
             name='Category',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -70,7 +77,7 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('brand', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='catalog.brands')),
+                ('brand', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='catalog.brand')),
                 ('categories', models.ManyToManyField(to='catalog.category')),
                 ('discount', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catalog.discount')),
             ],
