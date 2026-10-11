@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 import re
-
+from django.conf import settings
 
 def normalize_phone(phone):
     if not phone:
@@ -75,5 +75,24 @@ class UserModel(AbstractBaseUser, PermissionsMixin):
 
 
 
+class Address(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="addresses",db_index=False)
+    province = models.CharField(max_length=100)
+    city = models.CharField(max_length=100)
+    address = models.TextField()
+    postal_code = models.CharField(max_length=20)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "addresses"
+        indexes = [
+            models.Index(fields=["user"], name="addr_user_idx"),
+            models.Index(fields=["is_default"], name="addr_default_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.city} - {self.postal_code}"
 
 # Create your models here.
