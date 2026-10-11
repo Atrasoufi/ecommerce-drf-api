@@ -11,6 +11,7 @@ admin.site.register(Discount)
 admin.site.register(Discount_Type)
 admin.site.register(Products)
 admin.site.register(Product_Images)
+admin.site.register(Product_Variants)
 admin.site.register(Category)
 
 
