@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 import re
 from django.conf import settings
 
+
+
 def normalize_phone(phone):
     if not phone:
         raise ValueError("Phone number cannot be empty!")
@@ -95,4 +97,3 @@ class Address(models.Model):
     def __str__(self):
         return f"{self.city} - {self.postal_code}"
 
-# Create your models here.

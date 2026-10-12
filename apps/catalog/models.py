@@ -78,5 +78,19 @@ class Product_Variants(models.Model):
     def __str__(self):
         return f"{self.product.name} - {self.sku} - {self.color} - {self.warranty}"
 
+class Brands(models.Model):
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=180, unique=True)
+    logo = models.CharField(max_length=500, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
+    class Meta:
+        db_table = "brands"
+        indexes = [
+            models.Index(fields=["is_active"]),
+            models.Index(fields=["slug"]),
+        ]
+
+    def __str__(self):
+        return self.name
 # Create your models here.

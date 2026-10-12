@@ -19,5 +19,6 @@ DATABASES = {
 }
 
 
-AUTH_USER_MODEL = "accounts.UserModel"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+AUTH_USER_MODEL = "accounts.UserModel"
