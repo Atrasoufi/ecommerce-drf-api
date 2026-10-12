@@ -40,20 +40,6 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Brands',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=150)),
-                ('slug', models.SlugField(max_length=180, unique=True)),
-                ('logo', models.CharField(blank=True, max_length=500, null=True)),
-                ('is_active', models.BooleanField(default=True)),
-            ],
-            options={
-                'db_table': 'brands',
-                'indexes': [models.Index(fields=['is_active'], name='brands_is_acti_101dba_idx'), models.Index(fields=['slug'], name='brands_slug_6a4b1c_idx')],
-            },
-        ),
-        migrations.CreateModel(
             name='Discount',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),

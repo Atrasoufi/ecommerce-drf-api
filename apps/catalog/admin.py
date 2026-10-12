@@ -1,14 +1,14 @@
 from django.contrib import admin
-
 from .models import (
     Discount,
     Discount_Type,
     Products,
     Product_Images,
     Product_Variants,
-    Brands,
     Category,
+    Brands,
 )
+
 
 admin.site.register(Discount)
 admin.site.register(Discount_Type)
