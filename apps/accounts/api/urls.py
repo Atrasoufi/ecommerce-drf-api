@@ -1,5 +1,8 @@
 
 from django.urls import path
+from django.urls import path
+from .views.views import RegistrationAPIView
+
 
 # View وارد کردن 
 from apps.accounts.api.views.views import (
@@ -33,4 +36,12 @@ urlpatterns = [
         SetDefaultAddressView.as_view(),
         name="address-set-default",
     ),
+    
+    path(
+        "register/",
+        RegistrationAPIView.as_view(),
+        name="register",
+    ),
 ]
+
+

@@ -65,5 +65,12 @@ class SetDefaultAddressView(APIView):
 
         #  اطلاعات آدرس انتخاب‌شده را در پاسخ برمی‌گردانیمAPI 
         return Response(AddressSerializer(address).data)
+from rest_framework import generics
+from rest_framework.permissions import AllowAny
 
-# Create your views here.
+from ..serializers.serializers import RegistrationSerializer
+
+
+class RegistrationAPIView(generics.CreateAPIView):
+    serializer_class = RegistrationSerializer
+    permission_classes = [AllowAny]
