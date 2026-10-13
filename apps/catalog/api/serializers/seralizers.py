@@ -28,7 +28,7 @@ class CategoryWriteSerializer(serializers.ModelSerializer):
         model = Category
 
         # فقط فیلدهایی که کلاینت اجازه ارسال آن‌ها را دارد
-        fields = ["name", "description"]
+        fields = ["name", "slug","description"]
 
 
 # =========================
@@ -56,4 +56,4 @@ class BrandsWriteSerializer(serializers.ModelSerializer):
         # مدل برند
         model = Brands
         # فیلدهای مجاز برای دریافت از کلاینت
-        fields = ["name"]
+        fields = ["name","slug"]
