@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 
+
 class Category(models.Model):
     name = models.CharField(max_length=150)
     slug = models.CharField(max_length=100, unique=True)
@@ -38,12 +39,28 @@ class Discount(models.Model):
     def __str__(self):
             return self.discount
 
+class Brands(models.Model):
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=180, unique=True)
+    logo = models.CharField(max_length=500, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "brands"
+        indexes = [
+            models.Index(fields=["is_active"]),
+            models.Index(fields=["slug"]),
+        ]
+
+    def __str__(self):
+        return self.name
+    
 class Products(models.Model):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(blank=True)
     categories = models.ManyToManyField(Category,)
-    brand = models.ForeignKey("Brands", on_delete=models.SET_NULL,null=True)
+    brand = models.ForeignKey(Brands, on_delete=models.SET_NULL,null=True)
     discount = models.ForeignKey(Discount,on_delete=models.DO_NOTHING)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
