@@ -6,6 +6,23 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from ...models import UserModel
 
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserModel
+        fields = [
+            "id",
+            "email",
+            "phone",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+        ]
+
+
 # Serializer پایه برای تعریف فیلدهای مشترک اطلاعات کاربر
 class UserBaseSerializer(serializers.ModelSerializer):
     class Meta:

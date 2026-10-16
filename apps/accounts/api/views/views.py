@@ -1,10 +1,28 @@
-# from django.shortcuts import render
+
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+
+from apps.accounts.api.serializers.serializers import ProfileSerializer
 from rest_framework import generics, permissions
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.accounts.models import Address
 from apps.accounts.api.serializers.serializers import AddressSerializer
+
+from rest_framework.permissions import AllowAny
+from ..serializers.serializers import RegistrationSerializer
+
+
+
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+# from django.shortcuts import render
 
 
 # نمایش فهرست آدرس‌های کاربر و ایجاد آدرس جدید
@@ -65,10 +83,6 @@ class SetDefaultAddressView(APIView):
 
         #  اطلاعات آدرس انتخاب‌شده را در پاسخ برمی‌گردانیمAPI 
         return Response(AddressSerializer(address).data)
-from rest_framework import generics
-from rest_framework.permissions import AllowAny
-
-from ..serializers.serializers import RegistrationSerializer
 
 
 class RegistrationAPIView(generics.CreateAPIView):

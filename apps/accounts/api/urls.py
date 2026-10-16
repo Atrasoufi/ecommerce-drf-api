@@ -1,13 +1,13 @@
 from django.urls import path
 from .views.views import RegistrationAPIView
+from apps.accounts.api.views.views import ProfileView
 
-
-# View وارد کردن 
 from apps.accounts.api.views.views import (
     AddressListCreateView,
     AddressDetailView,
     SetDefaultAddressView,
 )
+
 
 # API تعریف مسیرهای مربوط به  
 urlpatterns = [
@@ -40,6 +40,8 @@ urlpatterns = [
         RegistrationAPIView.as_view(),
         name="register",
     ),
+  
+    path("profile/", ProfileView.as_view(), name="profile"),
 ]
 
 

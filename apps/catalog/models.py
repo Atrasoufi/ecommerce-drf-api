@@ -60,7 +60,7 @@ class Products(models.Model):
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(blank=True)
     categories = models.ManyToManyField(Category,)
-    brand = models.ForeignKey(Brands, on_delete=models.SET_NULL,null=True)
+    brand = models.ForeignKey("Brands", on_delete=models.SET_NULL,null=True)
     discount = models.ForeignKey(Discount,on_delete=models.DO_NOTHING)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
