@@ -9,7 +9,7 @@ class Cart(models.Model):
         on_delete=models.CASCADE,
         related_name="cart",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at =    models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
