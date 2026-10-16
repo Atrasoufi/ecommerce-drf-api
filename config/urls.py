@@ -3,7 +3,7 @@ URL configuration for config project.
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -50,4 +50,6 @@ urlpatterns = [
         TokenBlacklistView.as_view(),
         name="token_blacklist",
     ),
+    
+    path("api/accounts/", include("apps.accounts.api.urls")),
 ]
