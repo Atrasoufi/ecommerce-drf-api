@@ -92,3 +92,56 @@ class Product_Variants(models.Model):
     def __str__(self):
         return f"{self.product.name} - {self.sku} - {self.color} - {self.warranty}"
 
+
+# Create your models here.
+class Review(models.Model):
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name="reviews"
+    )
+    # فرض بر این است که مدل کاربری پروژه شما در اپلیکیشن accounts تعریف شده است.
+    # اگر اسم مدل کاربری شما چیز دیگری است (مثلاً User)، آن را جایگزین کنید.
+    user = models.ForeignKey(
+        "accounts.User", 
+        on_delete=models.CASCADE,
+        related_name="reviews"
+    )
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)], # طبق ساختار شما، فقط حداقل را تعیین کردیم
+        default=5
+    )
+    comment = models.TextField()
+    is_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        # جلوگیری از ثبت چند نظر برای یک محصول توسط یک کاربر
+        unique_together = ("product", "user")
+
+    def str(self):
+        return f"{self.user} - {self.product.name} ({self.rating})"
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        "accounts.User", 
+        on_delete=models.CASCADE,
+        related_name="favorites"
+    )
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name="favorites"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        # جلوگیری از لایک تکراری یک محصول توسط یک کاربر
+        unique_together = ("user", "product")
+
+    def str(self):
+        return f"{self.user} -> {self.product.name}"
