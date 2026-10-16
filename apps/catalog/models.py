@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.conf import settings
 
 
 class Category(models.Model):
@@ -103,9 +104,8 @@ class Review(models.Model):
     # فرض بر این است که مدل کاربری پروژه شما در اپلیکیشن accounts تعریف شده است.
     # اگر اسم مدل کاربری شما چیز دیگری است (مثلاً User)، آن را جایگزین کنید.
     user = models.ForeignKey(
-        "accounts.User", 
-        on_delete=models.CASCADE,
-        related_name="reviews"
+    settings.AUTH_USER_MODEL,
+    on_delete=models.CASCADE,
     )
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)], # طبق ساختار شما، فقط حداقل را تعیین کردیم
@@ -126,10 +126,10 @@ class Review(models.Model):
 
 
 class Favorite(models.Model):
+    
     user = models.ForeignKey(
-        "accounts.User", 
-        on_delete=models.CASCADE,
-        related_name="favorites"
+    settings.AUTH_USER_MODEL,
+    on_delete=models.CASCADE,
     )
     product = models.ForeignKey(
         Products,
