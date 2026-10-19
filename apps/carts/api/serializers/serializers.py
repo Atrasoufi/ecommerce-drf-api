@@ -37,7 +37,8 @@ class CartReadSerializer(CartBaseSerializer):
 
 # Serializer مخصوص ایجاد و ویرایش سبد خرید
 class CartWriteSerializer(CartBaseSerializer):
-    class Meta(CartBaseSerializer.Meta):
+    class Meta:
+        model = Cart
         fields = []
 
 
@@ -73,8 +74,8 @@ class CartItemWriteSerializer(CartItemBaseSerializer):
 
     variant = serializers.PrimaryKeyRelatedField(
         queryset=Product_Variants.objects.all(),
-        required=False,
-        allow_null=True,
+        required=True,
+        allow_null=False,
     )
 
     class Meta(CartItemBaseSerializer.Meta):
@@ -84,6 +85,7 @@ class CartItemWriteSerializer(CartItemBaseSerializer):
             "quantity",
         ]
 
+    # بررسی تعداد درخواستی
     def validate_quantity(self, value):
         if value < 1:
             raise serializers.ValidationError(
@@ -92,6 +94,7 @@ class CartItemWriteSerializer(CartItemBaseSerializer):
 
         return value
 
+    # اعتبارسنجی محصول، تنوع و موجودی
     def validate(self, attrs):
         product = attrs.get(
             "product",
@@ -103,13 +106,43 @@ class CartItemWriteSerializer(CartItemBaseSerializer):
             getattr(self.instance, "variant", None),
         )
 
-        if (
-            variant is not None
-            and product is not None
-            and variant.product_id != product.id
-        ):
+        quantity = attrs.get(
+            "quantity",
+            getattr(self.instance, "quantity", 1),
+        )
+
+        # انتخاب تنوع الزامی است
+        if variant is None:
             raise serializers.ValidationError({
-                "variant": "این تنوع متعلق به محصول انتخاب‌شده نیست."
+                "variant": "انتخاب تنوع محصول الزامی است."
+            })
+
+        # بررسی تعلق تنوع به محصول
+        if product is not None and variant.product_id != product.id:
+            raise serializers.ValidationError({
+                "variant": (
+                    "این تنوع متعلق به محصول انتخاب‌شده نیست."
+                )
+            })
+
+        # بررسی فعال بودن محصول
+        if product is not None and not product.is_active:
+            raise serializers.ValidationError({
+                "product": "این محصول غیرفعال است."
+            })
+
+        # بررسی فعال بودن تنوع
+        if not variant.is_active:
+            raise serializers.ValidationError({
+                "variant": "این تنوع غیرفعال است."
+            })
+
+        # بررسی موجودی انبار
+        if quantity > variant.stock:
+            raise serializers.ValidationError({
+                "quantity": (
+                    f"موجودی این تنوع {variant.stock} عدد است."
+                )
             })
 
         return attrs
