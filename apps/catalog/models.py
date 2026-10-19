@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from ..accounts.models import UserModel
 from django.conf import settings
 
 
@@ -55,12 +56,14 @@ class Brands(models.Model):
 
     def __str__(self):
         return self.name
+
     
 class Products(models.Model):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(blank=True)
     categories = models.ManyToManyField(Category,)
+    brand = models.ForeignKey(Brands, on_delete=models.SET_NULL,null=True)
     brand = models.ForeignKey("Brands", on_delete=models.SET_NULL,null=True)
     discount = models.ForeignKey(Discount,on_delete=models.DO_NOTHING)
     is_active = models.BooleanField(default=True)
@@ -93,6 +96,18 @@ class Product_Variants(models.Model):
     def __str__(self):
         return f"{self.product.name} - {self.sku} - {self.color} - {self.warranty}"
 
+class Reviews(models.Model):
+    user = models.ForeignKey(
+        UserModel,
+        on_delete=models.CASCADE,
+        related_name="reviews",)
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+    )
+    rating = models.SmallIntegerField()
+    comment = models.TextField(blank=True)
 
 # Create your models here.
 class Review(models.Model):
@@ -117,6 +132,48 @@ class Review(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = "reviews"
+        indexes = [
+            models.Index(fields=["product"]),
+            models.Index(fields=["user"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="unique_user_product_review",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.product} - {self.rating}"
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        UserModel,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+    )
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "favorites"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="unique_user_product_favorite",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["product"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.product}"
         ordering = ["-created_at"]
         # جلوگیری از ثبت چند نظر برای یک محصول توسط یک کاربر
         unique_together = ("product", "user")
