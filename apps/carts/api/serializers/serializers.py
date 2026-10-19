@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from ...models import Cart, CartItem
-from catalog.models import Products, Product_Variants
+from ....catalog.models import Products, Product_Variants
 
 
 # Serializer پایه سبد خرید
