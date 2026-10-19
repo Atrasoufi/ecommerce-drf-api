@@ -64,7 +64,6 @@ class Products(models.Model):
     description = models.TextField(blank=True)
     categories = models.ManyToManyField(Category,)
     brand = models.ForeignKey(Brands, on_delete=models.SET_NULL,null=True)
-    brand = models.ForeignKey("Brands", on_delete=models.SET_NULL,null=True)
     discount = models.ForeignKey(Discount,on_delete=models.DO_NOTHING)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -96,25 +95,12 @@ class Product_Variants(models.Model):
     def __str__(self):
         return f"{self.product.name} - {self.sku} - {self.color} - {self.warranty}"
 
-class Reviews(models.Model):
-    user = models.ForeignKey(
-        UserModel,
-        on_delete=models.CASCADE,
-        related_name="reviews",)
-    product = models.ForeignKey(
-        Products,
-        on_delete=models.CASCADE,
-        related_name="reviews",
-    )
-    rating = models.SmallIntegerField()
-    comment = models.TextField(blank=True)
-
 # Create your models here.
 class Review(models.Model):
     product = models.ForeignKey(
         Products,
         on_delete=models.CASCADE,
-        related_name="reviews"
+        related_name="reviews",
     )
     # فرض بر این است که مدل کاربری پروژه شما در اپلیکیشن accounts تعریف شده است.
     # اگر اسم مدل کاربری شما چیز دیگری است (مثلاً User)، آن را جایگزین کنید.
@@ -162,6 +148,7 @@ class Favorite(models.Model):
 
     class Meta:
         db_table = "favorites"
+        ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "product"],
@@ -173,32 +160,4 @@ class Favorite(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user} - {self.product}"
-        ordering = ["-created_at"]
-        # جلوگیری از ثبت چند نظر برای یک محصول توسط یک کاربر
-        unique_together = ("product", "user")
-
-    def str(self):
-        return f"{self.user} - {self.product.name} ({self.rating})"
-
-
-class Favorite(models.Model):
-    
-    user = models.ForeignKey(
-    settings.AUTH_USER_MODEL,
-    on_delete=models.CASCADE,
-    )
-    product = models.ForeignKey(
-        Products,
-        on_delete=models.CASCADE,
-        related_name="favorites"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        # جلوگیری از لایک تکراری یک محصول توسط یک کاربر
-        unique_together = ("user", "product")
-
-    def str(self):
-        return f"{self.user} -> {self.product.name}"
+        return f"{self.user} - {self.product.name}"
