@@ -7,7 +7,7 @@ from .models import (
     Product_Variants,
     Category,
     Brands,
-    Reviews,
+    Review,
     Favorite
 )
 
@@ -19,5 +19,5 @@ admin.site.register(Product_Images)
 admin.site.register(Product_Variants)
 admin.site.register(Brands)
 admin.site.register(Category)
-admin.site.register(Reviews)
+admin.site.register(Review)
 admin.site.register(Favorite)
