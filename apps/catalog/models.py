@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-
+from ..accounts.models import UserModel
 
 class Category(models.Model):
     name = models.CharField(max_length=150)
@@ -39,12 +39,28 @@ class Discount(models.Model):
     def __str__(self):
             return self.discount
 
+class Brands(models.Model):
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=180, unique=True)
+    logo = models.CharField(max_length=500, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "brands"
+        indexes = [
+            models.Index(fields=["is_active"]),
+            models.Index(fields=["slug"]),
+        ]
+
+    def __str__(self):
+        return self.name
+
 class Products(models.Model):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(blank=True)
     categories = models.ManyToManyField(Category,)
-    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL,null=True)
+    brand = models.ForeignKey(Brands, on_delete=models.SET_NULL,null=True)
     discount = models.ForeignKey(Discount,on_delete=models.DO_NOTHING)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -76,18 +92,62 @@ class Product_Variants(models.Model):
     def __str__(self):
         return f"{self.product.name} - {self.sku} - {self.color} - {self.warranty}"
 
-class Brands(models.Model):
-    name = models.CharField(max_length=150)
-    slug = models.SlugField(max_length=180, unique=True)
-    logo = models.CharField(max_length=500, null=True, blank=True)
-    is_active = models.BooleanField(default=True)
+class Reviews(models.Model):
+    user = models.ForeignKey(
+        UserModel,
+        on_delete=models.CASCADE,
+        related_name="reviews",)
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+    )
+    rating = models.SmallIntegerField()
+    comment = models.TextField(blank=True)
+    is_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "brands"
+        db_table = "reviews"
         indexes = [
-            models.Index(fields=["is_active"]),
-            models.Index(fields=["slug"]),
+            models.Index(fields=["product"]),
+            models.Index(fields=["user"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="unique_user_product_review",
+            )
         ]
 
     def __str__(self):
-        return self.name
+        return f"{self.user} - {self.product} - {self.rating}"
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        UserModel,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+    )
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "favorites"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="unique_user_product_favorite",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["product"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.product}"
