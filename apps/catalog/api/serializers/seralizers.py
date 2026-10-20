@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ...models import Category, Brands
+from ...models import Category, Brands, Products, Product_Images, Product_Variants
 # =========================
 # Serializer های دسته‌بندی
 # =========================
@@ -57,3 +57,60 @@ class BrandsWriteSerializer(serializers.ModelSerializer):
         model = Brands
         # فیلدهای مجاز برای دریافت از کلاینت
         fields = ["name","slug"]
+        
+        
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product_Images
+        fields = ["id", "image", "is_primary"]
+
+
+class ProductVariantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product_Variants
+        fields = [
+            "id",
+            "sku",
+            "color",
+            "warranty",
+            "price",
+            "stock",
+        ]
+
+
+class ProductsListSerializer(serializers.ModelSerializer):
+    categories = CategoryReadSerializer(many=True, read_only=True)
+    brand = BrandsReadSerializer(read_only=True)
+
+    images = ProductImageSerializer(
+        source="product_images_set",
+        many=True,
+        read_only=True,
+    )
+
+    variants = ProductVariantSerializer(
+        source="product_variants_set",
+        many=True,
+        read_only=True,
+    )
+
+    class Meta:
+        model = Products
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "description",
+            "categories",
+            "brand",
+            "images",
+            "variants",
+            "created_at",
+        ]
+
+
+class ProductsDetailSerializer(ProductsListSerializer):
+    class Meta(ProductsListSerializer.Meta):
+        fields = ProductsListSerializer.Meta.fields + [
+            "updated_at",
+        ]
