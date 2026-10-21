@@ -2,7 +2,12 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from apps.catalog.api.views.review import ReviewViewSet
 from apps.catalog.api.views.favorite import FavoriteViewSet
-from .views import CategoryViewSet, BrandsViewSet, ProductListView, ProductDetailView
+from .views.views import (
+    CategoryViewSet,
+    BrandsViewSet,
+    ProductListView,
+    ProductDetailView,
+)
 
 router = DefaultRouter()
 router.register(r'reviews', ReviewViewSet, basename='review')
