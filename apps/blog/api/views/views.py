@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 
-from rest_framework import status, viewsets
+from rest_framework import request, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
     AllowAny,
@@ -156,11 +156,13 @@ class CommentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    def destroy(self, request, *args, **kwargs):
-        comment = self.get_object()
-        self.check_object_permissions(request, comment)
-        comment.delete()
+    # def destroy(self, request, *args, **kwargs):
+    #     comment = self.get_object()
+    #     self.check_object_permissions(request, comment)
+    #     comment.delete()
 
-        return Response(
-            status=status.HTTP_204_NO_CONTENT,
-        )
+    #     return Response(
+    #         status=status.HTTP_204_NO_CONTENT,
+    #     )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
