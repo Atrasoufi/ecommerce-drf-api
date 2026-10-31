@@ -10,43 +10,263 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('accounts', '0001_initial'),
-        ('catalog', '0001_initial'),
+        ("accounts", "0001_initial"),
+        ("catalog", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Order',
+            name="Order",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.CharField(default='pending', max_length=30)),
-                ('payment_status', models.CharField(default='unpaid', max_length=30)),
-                ('subtotal', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('discount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('shipping_cost', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('total_price', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('address', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='accounts.address')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='orders', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("processing", "Processing"),
+                            ("shipped", "Shipped"),
+                            ("delivered", "Delivered"),
+                            ("cancelled", "Cancelled"),
+                        ],
+                        default="pending",
+                        max_length=30,
+                    ),
+                ),
+                (
+                    "payment_status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("paid", "Paid"),
+                            ("failed", "Failed"),
+                            ("refunded", "Refunded"),
+                        ],
+                        default="pending",
+                        max_length=30,
+                    ),
+                ),
+                ("subtotal", models.DecimalField(decimal_places=2, max_digits=12)),
+                (
+                    "discount",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=12,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                    ),
+                ),
+                (
+                    "shipping_cost",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=12,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                    ),
+                ),
+                ("total_price", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "address",
+                    models.ForeignKey(
+                        db_index=False,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="orders",
+                        to="accounts.address",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        db_index=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="orders",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
+                "db_table": "orders",
             },
         ),
         migrations.CreateModel(
-            name='OrderItem',
+            name="OrderItem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('product_name', models.CharField(max_length=255)),
-                ('unit_price', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('discount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('quantity', models.PositiveIntegerField(default=1)),
-                ('total_price', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='orders.order')),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='catalog.products')),
-                ('variant', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='catalog.product_variants')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("product_name", models.CharField(max_length=255)),
+                ("unit_price", models.DecimalField(decimal_places=2, max_digits=12)),
+                (
+                    "discount",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=12,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                    ),
+                ),
+                (
+                    "quantity",
+                    models.PositiveIntegerField(
+                        validators=[django.core.validators.MinValueValidator(1)]
+                    ),
+                ),
+                ("total_price", models.DecimalField(decimal_places=2, max_digits=12)),
+                (
+                    "order",
+                    models.ForeignKey(
+                        db_index=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="items",
+                        to="orders.order",
+                    ),
+                ),
+                (
+                    "product",
+                    models.ForeignKey(
+                        db_index=False,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="order_items",
+                        to="catalog.products",
+                    ),
+                ),
+                (
+                    "variant",
+                    models.ForeignKey(
+                        blank=True,
+                        db_index=False,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="order_items",
+                        to="catalog.product_variants",
+                    ),
+                ),
             ],
+            options={
+                "db_table": "order_items",
+            },
+        ),
+        migrations.CreateModel(
+            name="Payment",
+            fields=[
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "method",
+                    models.CharField(
+                        choices=[
+                            ("online", "Online"),
+                            ("card_to_card", "Card to card"),
+                            ("cash", "Cash"),
+                        ],
+                        max_length=30,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("success", "Success"),
+                            ("failed", "Failed"),
+                            ("refunded", "Refunded"),
+                        ],
+                        default="pending",
+                        max_length=30,
+                    ),
+                ),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                (
+                    "transaction_id",
+                    models.CharField(blank=True, max_length=255, null=True),
+                ),
+                ("paid_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "order",
+                    models.ForeignKey(
+                        db_index=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="payments",
+                        to="orders.order",
+                    ),
+                ),
+            ],
+            options={
+                "db_table": "payments",
+            },
+        ),
+        migrations.AddIndex(
+            model_name="order",
+            index=models.Index(fields=["user"], name="order_user_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="order",
+            index=models.Index(fields=["address"], name="order_address_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="order",
+            index=models.Index(fields=["status"], name="order_status_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="order",
+            index=models.Index(
+                fields=["payment_status"], name="order_payment_status_idx"
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="order",
+            index=models.Index(fields=["created_at"], name="order_created_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="orderitem",
+            index=models.Index(fields=["order"], name="orderitem_order_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="orderitem",
+            index=models.Index(fields=["product"], name="orderitem_product_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="orderitem",
+            index=models.Index(fields=["variant"], name="orderitem_variant_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="payment",
+            index=models.Index(fields=["order"], name="payment_order_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="payment",
+            index=models.Index(fields=["status"], name="payment_status_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="payment",
+            index=models.Index(
+                fields=["transaction_id"], name="payment_transaction_idx"
+            ),
         ),
     ]
