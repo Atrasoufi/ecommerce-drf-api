@@ -1,14 +1,13 @@
-from django.shortcuts import render
-
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from ...models import Order
-from ....catalog.models import Products
+from apps.orders.models import Order
+from apps.catalog.models import Product_Variants
 
 
 class CancelOrderAPIView(APIView):
@@ -16,36 +15,45 @@ class CancelOrderAPIView(APIView):
 
     def post(self, request, pk):
         with transaction.atomic():
+
             order = get_object_or_404(
                 Order.objects.select_for_update(),
                 pk=pk,
                 user=request.user,
             )
 
-            if order.status not in ["pending", "processing"]:
+            # Check order status
+            if order.status not in [
+                Order.Status.PENDING,
+                Order.Status.PROCESSING,
+            ]:
                 return Response(
-                    {
-                        "detail": "This order cannot be cancelled."
-                    },
+                    {"detail": "This order cannot be cancelled."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            for item in order.items.all():
-                product = Products.objects.select_for_update().get(
-                    pk=item.product_id
+            # Only unpaid orders can be cancelled
+            if order.payment_status != Order.PaymentStatus.PENDING:
+                return Response(
+                    {"detail": "Paid orders cannot be cancelled."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
-                product.stock += item.quantity
-                product.save(update_fields=["stock"])
+            # Restore product variant stock
+            for item in order.items.select_related("variant"):
+                if item.variant_id is None:
+                    continue
 
-            order.status = "cancelled"
+                variant = Product_Variants.objects.select_for_update().get(
+                    pk=item.variant_id
+                )
 
-            if order.payment_status == "pending":
-                order.payment_status = "cancelled"
+                variant.stock += item.quantity
+                variant.save(update_fields=["stock"])
 
-            order.save(
-                update_fields=["status", "payment_status"]
-            )
+            # Update order status
+            order.status = Order.Status.CANCELLED
+            order.save(update_fields=["status", "updated_at"])
 
         return Response(
             {
