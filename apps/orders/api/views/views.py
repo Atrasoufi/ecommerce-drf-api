@@ -1,19 +1,44 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
+from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
 
 from apps.orders.models import Order
 from apps.catalog.models import Product_Variants
 
+from apps.orders.api.serializers.serializers import (
+    OrderListSerializer,
+    OrderDetailSerializer,
+)
+
+
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Order.objects.filter(user=self.request.user)
+
+        order_status = self.request.query_params.get("status")
+
+        if order_status:
+            queryset = queryset.filter(status=order_status)
+
+        return queryset
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return OrderDetailSerializer
+
+        return OrderListSerializer
+
 
 class CancelOrderAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
+
         with transaction.atomic():
 
             order = get_object_or_404(
@@ -22,7 +47,6 @@ class CancelOrderAPIView(APIView):
                 user=request.user,
             )
 
-            # Check order status
             if order.status not in [
                 Order.Status.PENDING,
                 Order.Status.PROCESSING,
@@ -32,15 +56,14 @@ class CancelOrderAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Only unpaid orders can be cancelled
             if order.payment_status != Order.PaymentStatus.PENDING:
                 return Response(
                     {"detail": "Paid orders cannot be cancelled."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Restore product variant stock
             for item in order.items.select_related("variant"):
+
                 if item.variant_id is None:
                     continue
 
@@ -49,9 +72,9 @@ class CancelOrderAPIView(APIView):
                 )
 
                 variant.stock += item.quantity
+
                 variant.save(update_fields=["stock"])
 
-            # Update order status
             order.status = Order.Status.CANCELLED
             order.save(update_fields=["status", "updated_at"])
 
