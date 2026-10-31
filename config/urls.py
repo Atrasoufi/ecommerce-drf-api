@@ -7,16 +7,14 @@ from django.urls import include, path
 
 from drf_spectacular.views import (
     SpectacularAPIView,
-    SpectacularSwaggerView,
     SpectacularRedocView,
+    SpectacularSwaggerView,
 )
-
 from rest_framework_simplejwt.views import (
+    TokenBlacklistView,
     TokenObtainPairView,
     TokenRefreshView,
-    TokenBlacklistView,
 )
-
 
 urlpatterns = [
     # Admin
@@ -51,4 +49,7 @@ urlpatterns = [
 
     # Orders
     path("api/orders/", include("apps.orders.api.urls")),
+
+    # Blog
+    path("api/blog/", include("apps.blog.api.urls")),
 ]
