@@ -1,7 +1,6 @@
-#;;;;;;
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from apps.orders.api.views import OrderViewSet
+from apps.orders.api.views.views import OrderViewSet
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='order')
