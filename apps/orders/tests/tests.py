@@ -6,15 +6,14 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Address
-from apps.orders.models import Order, OrderItem
 from apps.catalog.models import (
     Category,
-    Discount_Type,
     Discount,
-    Products,
+    Discount_Type,
     Product_Variants,
+    Products,
 )
-
+from apps.orders.models import Order, OrderItem
 
 User = get_user_model()
 
@@ -127,12 +126,9 @@ class OrderAPITestCase(TestCase):
 
     @staticmethod
     def get_results(response):
-        """Support both paginated and non-paginated list responses."""
         if isinstance(response.data, dict) and "results" in response.data:
             return response.data["results"]
         return response.data
-
-    # Issue #38: Order List & Retrieve
 
     def test_user_can_list_own_orders(self):
         self.authenticate()
@@ -187,8 +183,6 @@ class OrderAPITestCase(TestCase):
         response = self.client.get(self.list_url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    # Issue #39: Cancel Order
 
     def test_user_can_cancel_pending_unpaid_order(self):
         self.authenticate()

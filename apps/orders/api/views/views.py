@@ -1,17 +1,16 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
-from rest_framework import viewsets, permissions, status
-from rest_framework.views import APIView
+from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from apps.orders.models import Order
 from apps.catalog.models import Product_Variants
-
 from apps.orders.api.serializers.serializers import (
-    OrderListSerializer,
     OrderDetailSerializer,
+    OrderListSerializer,
 )
+from apps.orders.models import Order
 
 
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
@@ -38,9 +37,7 @@ class CancelOrderAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-
         with transaction.atomic():
-
             order = get_object_or_404(
                 Order.objects.select_for_update(),
                 pk=pk,
@@ -63,16 +60,13 @@ class CancelOrderAPIView(APIView):
                 )
 
             for item in order.items.select_related("variant"):
-
                 if item.variant_id is None:
                     continue
 
                 variant = Product_Variants.objects.select_for_update().get(
                     pk=item.variant_id
                 )
-
                 variant.stock += item.quantity
-
                 variant.save(update_fields=["stock"])
 
             order.status = Order.Status.CANCELLED
