@@ -1,10 +1,17 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from apps.orders.api.views.views import OrderViewSet
+
+from apps.orders.api.views.views import CancelOrderAPIView, OrderViewSet
+
 
 router = DefaultRouter()
-router.register(r'orders', OrderViewSet, basename='order')
+router.register(r"orders", OrderViewSet, basename="order")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path(
+        "orders/<int:pk>/cancel/",
+        CancelOrderAPIView.as_view(),
+        name="order-cancel",
+    ),
+    path("", include(router.urls)),
 ]

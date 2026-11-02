@@ -1,63 +1,6 @@
-from django.db import models
-
-
-
-#پیشنهادی ----------
-from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
-from apps.catalog.models import Products, Product_Variants
-
-class Order(models.Model):
-    # طبق ERD: user_id, address_id
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders")
-    
-    # فرض بر این است که یک مدل Address در اپلیکیشن accounts دارید. 
-    # اگر اسمش چیز دیگری است، آن را تغییر دهید.
-    address = models.ForeignKey("accounts.Address", on_delete=models.SET_NULL, null=True, blank=True)
-    
-    # طبق ERD: status, payment_status
-    status = models.CharField(max_length=30, default="pending")
-    payment_status = models.CharField(max_length=30, default="unpaid")
-    
-    # طبق ERD: مبالغ
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    shipping_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def str(self):
-        return f"Order {self.id} by {self.user}"
-
-
-class OrderItem(models.Model):
-    # طبق ERD: order_id, product_id, variant_id
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(Products, on_delete=models.CASCADE)
-    variant = models.ForeignKey(Product_Variants, on_delete=models.SET_NULL, null=True, blank=True)
-    
-    # طبق ERD: product_name, unit_price, discount, quantity, total_price
-    product_name = models.CharField(max_length=255)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
-    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    quantity = models.PositiveIntegerField(default=1)
-    total_price = models.DecimalField(max_digits=12, decimal_places=2)
-
-    def str(self):
-        return f"{self.product_name} (x{self.quantity})"
-
-
-
-
-# Create your models here.
-from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.db import models
 
 
 class Order(models.Model):
@@ -70,6 +13,7 @@ class Order(models.Model):
 
     class PaymentStatus(models.TextChoices):
         PENDING = "pending", "Pending"
+        UNPAID = "unpaid", "Unpaid"
         PAID = "paid", "Paid"
         FAILED = "failed", "Failed"
         REFUNDED = "refunded", "Refunded"
@@ -130,95 +74,4 @@ class Order(models.Model):
         return f"Order #{self.pk}"
 
 
-class OrderItem(models.Model):
-    order = models.ForeignKey(
-        "orders.Order",
-        on_delete=models.CASCADE,
-        related_name="items",
-        db_index=False,
-    )
-    product = models.ForeignKey(
-        "catalog.Products",
-        on_delete=models.PROTECT,
-        related_name="order_items",
-        db_index=False,
-    )
-    variant = models.ForeignKey(
-        "catalog.Product_Variants",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="order_items",
-        db_index=False,
-    )
-    product_name = models.CharField(max_length=255)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
-    discount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        validators=[MinValueValidator(0)],
-    )
-    quantity = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)],
-    )
-    total_price = models.DecimalField(max_digits=12, decimal_places=2)
-
-    class Meta:
-        db_table = "order_items"
-        indexes = [
-            models.Index(fields=["order"], name="orderitem_order_idx"),
-            models.Index(fields=["product"], name="orderitem_product_idx"),
-            models.Index(fields=["variant"], name="orderitem_variant_idx"),
-        ]
-
-    def __str__(self):
-        return f"{self.product_name} x {self.quantity}"
-
-
-class Payment(models.Model):
-    class Method(models.TextChoices):
-        ONLINE = "online", "Online"
-        CARD_TO_CARD = "card_to_card", "Card to card"
-        CASH = "cash", "Cash"
-
-    class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
-        SUCCESS = "success", "Success"
-        FAILED = "failed", "Failed"
-        REFUNDED = "refunded", "Refunded"
-
-    order = models.ForeignKey(
-        "orders.Order",
-        on_delete=models.CASCADE,
-        related_name="payments",
-        db_index=False,
-    )
-    method = models.CharField(max_length=30, choices=Method.choices)
-    status = models.CharField(
-        max_length=30,
-        choices=Status.choices,
-        default=Status.PENDING,
-    )
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    transaction_id = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True,
-    )
-    paid_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "payments"
-        indexes = [
-            models.Index(fields=["order"], name="payment_order_idx"),
-            models.Index(fields=["status"], name="payment_status_idx"),
-            models.Index(
-                fields=["transaction_id"],
-                name="payment_transaction_idx",
-            ),
-        ]
-
-    def __str__(self):
-        return f"Payment #{self.pk} - {self.status}"
+class OrderItem(models.

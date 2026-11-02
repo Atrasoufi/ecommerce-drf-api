@@ -1,24 +1,27 @@
-
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.orders.models import Order, OrderItem
+from apps.accounts.models import Address
 from apps.catalog.models import (
     Category,
-    Discount_Type,
     Discount,
-    Products,
+    Discount_Type,
     Product_Variants,
+    Products,
 )
+from apps.orders.models import Order, OrderItem
 
 
 User = get_user_model()
 
 
 class OrderAPITestCase(TestCase):
+    list_url = "/api/orders/orders/"
 
     def setUp(self):
         self.client = APIClient()
@@ -28,17 +31,28 @@ class OrderAPITestCase(TestCase):
             password="TestPass123!",
             phone="09120000001",
         )
-
         self.user2 = User.objects.create_user(
             email="user2@example.com",
             password="TestPass123!",
             phone="09120000002",
         )
 
-        discount_type = Discount_Type.objects.create(
-            name="Percentage",
+        self.address1 = Address.objects.create(
+            user=self.user1,
+            province="Tehran",
+            city="Tehran",
+            address="Test Address 1",
+            postal_code="1234567890",
+        )
+        self.address2 = Address.objects.create(
+            user=self.user2,
+            province="Tehran",
+            city="Tehran",
+            address="Test Address 2",
+            postal_code="1234567891",
         )
 
+        discount_type = Discount_Type.objects.create(name="Percentage")
         discount = Discount.objects.create(
             discount="No discount",
             value=0,
@@ -49,7 +63,6 @@ class OrderAPITestCase(TestCase):
             name="Test Category",
             slug="test-category",
         )
-
         product = Products.objects.create(
             name="Test Product",
             slug="test-product",
@@ -57,7 +70,7 @@ class OrderAPITestCase(TestCase):
         )
         product.categories.add(category)
 
-        variant = Product_Variants.objects.create(
+        self.variant = Product_Variants.objects.create(
             product=product,
             sku="TEST-001",
             color="Black",
@@ -68,85 +81,199 @@ class OrderAPITestCase(TestCase):
 
         self.order1 = Order.objects.create(
             user=self.user1,
-            status="pending",
-            payment_status="unpaid",
+            address=self.address1,
+            status=Order.Status.PENDING,
+            payment_status=Order.PaymentStatus.PENDING,
             subtotal=Decimal("100.00"),
             total_price=Decimal("100.00"),
         )
-
         self.order2 = Order.objects.create(
             user=self.user1,
-            status="processing",
-            payment_status="paid",
+            address=self.address1,
+            status=Order.Status.PROCESSING,
+            payment_status=Order.PaymentStatus.PAID,
             subtotal=Decimal("200.00"),
             total_price=Decimal("200.00"),
         )
-
         self.other_user_order = Order.objects.create(
             user=self.user2,
-            status="pending",
+            address=self.address2,
+            status=Order.Status.PENDING,
+            payment_status=Order.PaymentStatus.PENDING,
+            subtotal=Decimal("300.00"),
             total_price=Decimal("300.00"),
         )
 
-        OrderItem.objects.create(
+        self.order_item = OrderItem.objects.create(
             order=self.order1,
             product=product,
-            variant=variant,
+            variant=self.variant,
             product_name="Test Product",
             unit_price=Decimal("100.00"),
             quantity=1,
             total_price=Decimal("100.00"),
         )
 
+    def authenticate(self, user=None):
+        self.client.force_authenticate(user=user or self.user1)
+
+    @staticmethod
+    def get_results(response):
+        if isinstance(response.data, dict) and "results" in response.data:
+            return response.data["results"]
+        return response.data
+
+    # Task #38: list, retrieve, ownership, authentication, and filtering.
+
     def test_user_can_list_own_orders(self):
-        self.client.force_authenticate(user=self.user1)
+        self.authenticate()
 
-        response = self.client.get("/api/orders/orders/")
+        response = self.client.get(self.list_url)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(self.get_results(response)), 2)
 
     def test_user_cannot_see_other_users_orders(self):
-        self.client.force_authenticate(user=self.user1)
+        self.authenticate()
 
-        response = self.client.get("/api/orders/orders/")
+        response = self.client.get(self.list_url)
 
-        order_ids = [order["id"] for order in response.data]
-
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        order_ids = [order["id"] for order in self.get_results(response)]
         self.assertNotIn(self.other_user_order.id, order_ids)
 
     def test_filter_orders_by_status(self):
-        self.client.force_authenticate(user=self.user1)
+        self.authenticate()
 
-        response = self.client.get(
-            "/api/orders/orders/?status=pending"
-        )
+        response = self.client.get(self.list_url, {"status": "pending"})
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["status"], "pending")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        orders = self.get_results(response)
+        self.assertEqual(len(orders), 1)
+        self.assertEqual(orders[0]["status"], Order.Status.PENDING)
 
     def test_user_can_retrieve_own_order(self):
-        self.client.force_authenticate(user=self.user1)
+        self.authenticate()
 
-        response = self.client.get(
-            f"/api/orders/orders/{self.order1.id}/"
+        response = self.client.get(f"{self.list_url}{self.order1.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["payment_status"],
+            Order.PaymentStatus.PENDING,
         )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["payment_status"], "unpaid")
         self.assertEqual(len(response.data["items"]), 1)
 
     def test_user_cannot_retrieve_other_users_order(self):
-        self.client.force_authenticate(user=self.user1)
+        self.authenticate()
 
         response = self.client.get(
-            f"/api/orders/orders/{self.other_user_order.id}/"
+            f"{self.list_url}{self.other_user_order.id}/"
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_unauthenticated_user_cannot_list_orders(self):
-        response = self.client.get("/api/orders/orders/")
+        response = self.client.get(self.list_url)
 
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    # Task #39: cancellation validation, stock restoration, and rollback.
+
+    def test_user_can_cancel_pending_unpaid_order(self):
+        self.authenticate()
+        initial_stock = self.variant.stock
+
+        response = self.client.post(
+            f"{self.list_url}{self.order1.id}/cancel/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order1.refresh_from_db()
+        self.variant.refresh_from_db()
+        self.assertEqual(self.order1.status, Order.Status.CANCELLED)
+        self.assertEqual(self.variant.stock, initial_stock + 1)
+
+    def test_user_can_cancel_processing_unpaid_order(self):
+        self.authenticate()
+        self.order1.status = Order.Status.PROCESSING
+        self.order1.save(update_fields=["status"])
+        initial_stock = self.variant.stock
+
+        response = self.client.post(
+            f"{self.list_url}{self.order1.id}/cancel/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order1.refresh_from_db()
+        self.variant.refresh_from_db()
+        self.assertEqual(self.order1.status, Order.Status.CANCELLED)
+        self.assertEqual(self.variant.stock, initial_stock + 1)
+
+    def test_user_cannot_cancel_paid_order(self):
+        self.authenticate()
+
+        response = self.client.post(
+            f"{self.list_url}{self.order2.id}/cancel/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.order2.refresh_from_db()
+        self.assertEqual(self.order2.status, Order.Status.PROCESSING)
+
+    def test_user_cannot_cancel_other_users_order(self):
+        self.authenticate()
+
+        response = self.client.post(
+            f"{self.list_url}{self.other_user_order.id}/cancel/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_cannot_cancel_already_cancelled_order(self):
+        self.authenticate()
+        self.order1.status = Order.Status.CANCELLED
+        self.order1.save(update_fields=["status"])
+        initial_stock = self.variant.stock
+
+        response = self.client.post(
+            f"{self.list_url}{self.order1.id}/cancel/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock, initial_stock)
+
+    def test_unauthenticated_user_cannot_cancel_order(self):
+        response = self.client.post(
+            f"{self.list_url}{self.order1.id}/cancel/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_stock_restoration_rolls_back_if_order_save_fails(self):
+        self.authenticate()
+        initial_stock = self.variant.stock
+
+        with patch.object(Order, "save", side_effect=RuntimeError("save failed")):
+            with self.assertRaises(RuntimeError):
+                self.client.post(
+                    f"{self.list_url}{self.order1.id}/cancel/"
+                )
+
+        self.order1.refresh_from_db()
+        self.variant.refresh_from_db()
+        self.assertEqual(self.order1.status, Order.Status.PENDING)
+        self.assertEqual(self.variant.stock, initial_stock)
