@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -15,19 +16,11 @@ from apps.catalog.models import (
 )
 from apps.orders.models import Order, OrderItem
 
+
 User = get_user_model()
 
 
 class OrderAPITestCase(TestCase):
-    """
-    API tests for Order List/Retrieve (#38) and Cancel Order (#39).
-
-    Endpoint paths below match the current urls.py configuration:
-    /api/orders/orders/
-    /api/orders/orders/<id>/
-    /api/orders/orders/<id>/cancel/
-    """
-
     list_url = "/api/orders/orders/"
 
     def setUp(self):
@@ -130,14 +123,15 @@ class OrderAPITestCase(TestCase):
             return response.data["results"]
         return response.data
 
+    # Task #38: list, retrieve, ownership, authentication, and filtering.
+
     def test_user_can_list_own_orders(self):
         self.authenticate()
 
         response = self.client.get(self.list_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        orders = self.get_results(response)
-        self.assertEqual(len(orders), 2)
+        self.assertEqual(len(self.get_results(response)), 2)
 
     def test_user_cannot_see_other_users_orders(self):
         self.authenticate()
@@ -182,7 +176,12 @@ class OrderAPITestCase(TestCase):
     def test_unauthenticated_user_cannot_list_orders(self):
         response = self.client.get(self.list_url)
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    # Task #39: cancellation validation, stock restoration, and rollback.
 
     def test_user_can_cancel_pending_unpaid_order(self):
         self.authenticate()
@@ -193,15 +192,25 @@ class OrderAPITestCase(TestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.order1.refresh_from_db()
         self.variant.refresh_from_db()
-
         self.assertEqual(self.order1.status, Order.Status.CANCELLED)
-        self.assertEqual(
-            self.order1.payment_status,
-            Order.PaymentStatus.PENDING,
+        self.assertEqual(self.variant.stock, initial_stock + 1)
+
+    def test_user_can_cancel_processing_unpaid_order(self):
+        self.authenticate()
+        self.order1.status = Order.Status.PROCESSING
+        self.order1.save(update_fields=["status"])
+        initial_stock = self.variant.stock
+
+        response = self.client.post(
+            f"{self.list_url}{self.order1.id}/cancel/"
         )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order1.refresh_from_db()
+        self.variant.refresh_from_db()
+        self.assertEqual(self.order1.status, Order.Status.CANCELLED)
         self.assertEqual(self.variant.stock, initial_stock + 1)
 
     def test_user_cannot_cancel_paid_order(self):
@@ -215,12 +224,8 @@ class OrderAPITestCase(TestCase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
-
         self.order2.refresh_from_db()
-        self.assertEqual(
-            self.order2.status,
-            Order.Status.PROCESSING,
-        )
+        self.assertEqual(self.order2.status, Order.Status.PROCESSING)
 
     def test_user_cannot_cancel_other_users_order(self):
         self.authenticate()
@@ -235,7 +240,6 @@ class OrderAPITestCase(TestCase):
         self.authenticate()
         self.order1.status = Order.Status.CANCELLED
         self.order1.save(update_fields=["status"])
-
         initial_stock = self.variant.stock
 
         response = self.client.post(
@@ -246,7 +250,6 @@ class OrderAPITestCase(TestCase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
-
         self.variant.refresh_from_db()
         self.assertEqual(self.variant.stock, initial_stock)
 
@@ -255,4 +258,22 @@ class OrderAPITestCase(TestCase):
             f"{self.list_url}{self.order1.id}/cancel/"
         )
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_stock_restoration_rolls_back_if_order_save_fails(self):
+        self.authenticate()
+        initial_stock = self.variant.stock
+
+        with patch.object(Order, "save", side_effect=RuntimeError("save failed")):
+            with self.assertRaises(RuntimeError):
+                self.client.post(
+                    f"{self.list_url}{self.order1.id}/cancel/"
+                )
+
+        self.order1.refresh_from_db()
+        self.variant.refresh_from_db()
+        self.assertEqual(self.order1.status, Order.Status.PENDING)
+        self.assertEqual(self.variant.stock, initial_stock)

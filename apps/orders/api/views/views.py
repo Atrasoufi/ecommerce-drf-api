@@ -18,7 +18,6 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = Order.objects.filter(user=self.request.user)
-
         order_status = self.request.query_params.get("status")
 
         if order_status:
@@ -29,7 +28,6 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         if self.action == "retrieve":
             return OrderDetailSerializer
-
         return OrderListSerializer
 
 
@@ -44,22 +42,28 @@ class CancelOrderAPIView(APIView):
                 user=request.user,
             )
 
-            if order.status not in [
+            if order.status not in (
                 Order.Status.PENDING,
                 Order.Status.PROCESSING,
-            ]:
+            ):
                 return Response(
                     {"detail": "This order cannot be cancelled."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            if order.payment_status != Order.PaymentStatus.PENDING:
+            unpaid_statuses = {
+                Order.PaymentStatus.PENDING,
+                Order.PaymentStatus.UNPAID,
+            }
+            if order.payment_status not in unpaid_statuses:
                 return Response(
                     {"detail": "Paid orders cannot be cancelled."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            for item in order.items.select_related("variant"):
+            # Lock order items, then lock each variant before restoring stock.
+            items = order.items.select_for_update().order_by("pk")
+            for item in items:
                 if item.variant_id is None:
                     continue
 
