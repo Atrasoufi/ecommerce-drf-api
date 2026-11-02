@@ -267,3 +267,15 @@ pyrightconfig.json
 .env
 .venv/
 __pycache__/
+
+# macOS metadata
+.DS_Store
+._*
+
+# VS Code & JetBrains settings
+.vscode/
+.idea/
+
+# Static and media directories
+staticfiles/
+media/
