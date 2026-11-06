@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('accounts', '0002_address_address_addr_user_idx_and_more'),
+        ('accounts', '0001_initial'),
         ('catalog', '0007_alter_review_options_alter_favorite_unique_together_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
