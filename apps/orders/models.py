@@ -4,6 +4,7 @@ from django.db import models
 
 
 class Order(models.Model):
+
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
         PROCESSING = "processing", "Processing"
@@ -24,36 +25,50 @@ class Order(models.Model):
         related_name="orders",
         db_index=False,
     )
+
     address = models.ForeignKey(
         "accounts.Address",
         on_delete=models.PROTECT,
         related_name="orders",
         db_index=False,
     )
+
     status = models.CharField(
         max_length=30,
         choices=Status.choices,
         default=Status.PENDING,
     )
+
     payment_status = models.CharField(
         max_length=30,
         choices=PaymentStatus.choices,
         default=PaymentStatus.PENDING,
     )
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+
+    subtotal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
     discount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
     )
+
     shipping_cost = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
     )
-    total_price = models.DecimalField(max_digits=12, decimal_places=2)
+
+    total_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -67,11 +82,119 @@ class Order(models.Model):
                 fields=["payment_status"],
                 name="order_payment_status_idx",
             ),
-            models.Index(fields=["created_at"], name="order_created_idx"),
+            models.Index(
+                fields=["created_at"],
+                name="order_created_idx",
+            ),
         ]
 
     def __str__(self):
         return f"Order #{self.pk}"
 
 
-class OrderItem(models.
+class OrderItem(models.Model):
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+
+    product = models.ForeignKey(
+        "catalog.Products",
+        on_delete=models.PROTECT,
+        related_name="order_items",
+    )
+
+    variant = models.ForeignKey(
+        "catalog.Product_Variants",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_items",
+    )
+
+    product_name = models.CharField(max_length=255)
+
+    unit_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    discount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
+
+    quantity = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+    )
+
+    total_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    class Meta:
+        db_table = "order_items"
+
+    def __str__(self):
+        return f"{self.product_name} x {self.quantity}"
+
+
+class Payment(models.Model):
+
+    class Method(models.TextChoices):
+        ONLINE = "online", "Online"
+        CARD_TO_CARD = "card_to_card", "Card to Card"
+        CASH = "cash", "Cash"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+        REFUNDED = "refunded", "Refunded"
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="payments",
+    )
+
+    method = models.CharField(
+        max_length=30,
+        choices=Method.choices,
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+    )
+
+    transaction_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    paid_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "payments"
+
+    def __str__(self):
+        return f"Payment #{self.pk} - {self.status}"

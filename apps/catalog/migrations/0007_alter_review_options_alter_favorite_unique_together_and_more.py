@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('catalog', '0006_alter_products_options_remove_products_stock'),
+        ('catalog', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -30,18 +30,7 @@ class Migration(migrations.Migration):
             name='user',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='favorites', to=settings.AUTH_USER_MODEL),
         ),
-        migrations.AddIndex(
-            model_name='favorite',
-            index=models.Index(fields=['product'], name='favorites_product_7d70f0_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='review',
-            index=models.Index(fields=['product'], name='reviews_product_3516b2_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='review',
-            index=models.Index(fields=['user'], name='reviews_user_id_79db63_idx'),
-        ),
+        # تمام AddIndexها از اینجا حذف شدند تا با 0001 تداخل نکنند
         migrations.AddConstraint(
             model_name='favorite',
             constraint=models.UniqueConstraint(fields=('user', 'product'), name='unique_user_product_favorite'),
