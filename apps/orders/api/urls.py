@@ -1,5 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+from apps.orders.api.views.views import CreateOrderAPIView
 
 from apps.orders.api.views.views import CancelOrderAPIView, OrderViewSet
 
@@ -13,5 +14,6 @@ urlpatterns = [
         CancelOrderAPIView.as_view(),
         name="order-cancel",
     ),
+    path("create/", CreateOrderAPIView.as_view(), name="create-order"),
     path("", include(router.urls)),
 ]

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from apps.accounts.models import Address
 from apps.orders.models import Order, OrderItem, Payment
 
 
@@ -70,3 +70,20 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
+
+class CreateOrderSerializer(serializers.Serializer):
+    # آدرس ارسال سفارش از سمت کاربر دریافت می‌شود
+    address = serializers.PrimaryKeyRelatedField(
+        queryset=Address.objects.all()
+    )
+
+    def validate_address(self, address):
+        # فقط اجازه استفاده از آدرس متعلق به کاربر واردشده را می‌دهیم
+        user = self.context["request"].user
+
+        if address.user_id != user.id:
+            raise serializers.ValidationError(
+                "You can only use your own addresses."
+            )
+
+        return address
