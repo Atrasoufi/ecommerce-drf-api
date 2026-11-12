@@ -362,18 +362,31 @@ class CreateOrderTestCase(OrderAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_user_cannot_create_order_with_insufficient_stock(self):
-    # موجودی را کمتر از تعداد درخواستی سبد خرید قرار می‌دهیم
-       self.variant.stock = 1
-       self.variant.save(update_fields=["stock"])
-
-       self.authenticate()
-
-    # تلاش برای ثبت سفارش با موجودی ناکافی
-       response = self.client.post(
-           self.create_url,
-           {"address": self.address1.id},
-           format="json",
-    )
+        self.variant.stock = 1
+        self.variant.save(update_fields=["stock"])
+    
+        self.authenticate()
+    
+        response = self.client.post(
+            self.create_url,
+            {"address": self.address1.id},
+            format="json",
+        )
+    
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+    
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock, 1)
+    
+        self.assertEqual(self.cart.items.count(), 1)
+    
+        self.assertEqual(
+            Order.objects.filter(user=self.user1).count(),
+            2,
+        )
 
     # سفارش نباید ثبت شود
        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
