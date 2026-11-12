@@ -1,8 +1,10 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from apps.orders.api.views.views import CreateOrderAPIView
-
-from apps.orders.api.views.views import CancelOrderAPIView, OrderViewSet
+from apps.orders.api.views.views import (
+    CancelOrderAPIView,
+    CreateOrderAPIView,
+    OrderViewSet,
+)
 
 
 router = DefaultRouter()
