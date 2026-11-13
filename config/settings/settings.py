@@ -55,9 +55,9 @@ INSTALLED_APPS = [
     'apps.carts',
     "django_filters",
 
-    #======
+    
     'corsheaders'
-    #======
+    
 ]
 
 
