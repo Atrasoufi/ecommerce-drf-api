@@ -4,10 +4,6 @@ import os
 
 from .settings import *
 
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-load_dotenv(BASE_DIR / ".env")
-
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
@@ -17,6 +13,9 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+AUTH_USER_MODEL = "accounts.UserModel"
 
 
 
