@@ -13,6 +13,8 @@ class FAQAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("question", "answer")
     ordering = ("display_order",)
+    # Added list_editable so admins can quickly toggle status and reorder FAQs
+    list_editable = ("is_active", "display_order")
 
 
 @admin.register(ContactMessage)
