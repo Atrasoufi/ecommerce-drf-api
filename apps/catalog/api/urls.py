@@ -12,7 +12,6 @@ from .views.views import (
 router = DefaultRouter()
 router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'favorites', FavoriteViewSet, basename='favorite')
-#)(new)=====(I hope the new instructions are good.)
 router.register(r'categories', CategoryViewSet, basename='category') # 
 router.register(r'brands', BrandsViewSet, basename='brand')#
 #
