@@ -15,7 +15,7 @@ from datetime import timedelta
 import environ
 #
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent[2]
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -60,18 +60,7 @@ INSTALLED_APPS = [
     #======
 ]
 
-# MIDDLEWARE = [
-#     'django.middleware.security.SecurityMiddleware',
-#     'django.contrib.sessions.middleware.SessionMiddleware',
-#     'django.middleware.common.CommonMiddleware',
 
-#     'corsheaders.middleware.CorsMiddleware',
- 
-#     'django.middleware.csrf.CsrfViewMiddleware',
-#     'django.contrib.auth.middleware.AuthenticationMiddleware',
-#     'django.contrib.messages.middleware.MessageMiddleware',
-#     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-# ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -112,14 +101,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 
-#========(new)===========
+#
 DATABASES = {
     'default': env.db(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
     )
 }
-#========================
 
+#
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 
