@@ -373,33 +373,15 @@ class CreateOrderTestCase(OrderAPITestCase):
             format="json",
         )
     
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
+        # Order should not be created due to insufficient stock
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
+        # Stock should not change (transaction rollback test)
         self.variant.refresh_from_db()
         self.assertEqual(self.variant.stock, 1)
     
+        # Cart should remain intact
         self.assertEqual(self.cart.items.count(), 1)
     
-        self.assertEqual(
-            Order.objects.filter(user=self.user1).count(),
-            2,
-        )
-
-    # سفارش نباید ثبت شود
-       self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    # موجودی نباید تغییر کند
-       self.variant.refresh_from_db()
-       self.assertEqual(self.variant.stock, 1)
-
-    # سبد خرید باید حفظ شود
-       self.assertEqual(self.cart.items.count(), 1)
-
-    # هیچ سفارش جدیدی نباید ساخته شود
-       self.assertEqual(
-           Order.objects.filter(user=self.user1).count(),
-        2,
-    )
+        # No new order should be created
+        self.assertEqual(Order.objects.filter(user=self.user1).count(), 2)
