@@ -2,11 +2,13 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 
 from rest_framework import permissions, status, viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog.models import Product_Variants
 from apps.orders.api.serializers.serializers import (
+    CreateOrderSerializer,
     OrderDetailSerializer,
     OrderListSerializer,
 )
@@ -84,4 +86,32 @@ class CancelOrderAPIView(APIView):
                 "payment_status": order.payment_status,
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class CreateOrderAPIView(APIView):
+    # Only authenticated users can create orders
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CreateOrderSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        # Validate input data
+        serializer.is_valid(raise_exception=True)
+        
+        # Call the serializer's create method where the core business logic is handled
+        order = serializer.save()
+
+        return Response(
+            {
+                "message": "Order created successfully.",
+                "order_id": order.id,
+                "subtotal": order.subtotal,
+                "discount": order.discount,
+                "shipping_cost": order.shipping_cost,
+                "total_price": order.total_price,
+            },
+            status=status.HTTP_201_CREATED,
         )
