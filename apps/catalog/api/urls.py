@@ -10,14 +10,13 @@ from .views.views import (
 )
 
 router = DefaultRouter()
-router.register(r'reviews', ReviewViewSet, basename='review')
-router.register(r'favorites', FavoriteViewSet, basename='favorite')
-router.register(r'categories', CategoryViewSet, basename='category') # 
-router.register(r'brands', BrandsViewSet, basename='brand')#
-#
+router.register(r"reviews", ReviewViewSet, basename="review")
+router.register(r"favorites", FavoriteViewSet, basename="favorite")
+router.register(r"categories", CategoryViewSet, basename="category")
+router.register(r"brands", BrandsViewSet, basename="brand")
+
 urlpatterns = [
-    path('', include(router.urls)),
-    
+    path("", include(router.urls)),
     path("products/", ProductListView.as_view(), name="product-list"),
     path("products/<int:pk>/", ProductDetailView.as_view(), name="product-detail"),
 ]
