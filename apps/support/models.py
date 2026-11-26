@@ -1,13 +1,14 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
-class FAQ(models.Model):
+from apps.core.models import TimeStampedModel
+
+
+class FAQ(TimeStampedModel):
     question = models.CharField(max_length=255)
     answer = models.TextField()
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["display_order", "created_at"]
@@ -20,7 +21,6 @@ class FAQ(models.Model):
 
 
 class ContactMessage(models.Model):
-    # Using AUTH_USER_MODEL to properly reference the custom User model
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -44,5 +44,4 @@ class ContactMessage(models.Model):
         ]
 
     def __str__(self):
-        # Fixed syntax error: F-string must be properly closed on a single line
         return f"{self.subject} - {self.email}"

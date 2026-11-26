@@ -2,8 +2,10 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from apps.core.models import TimeStampedModel
 
-class Order(models.Model):
+
+class Order(TimeStampedModel):
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
@@ -69,9 +71,6 @@ class Order(models.Model):
         decimal_places=2,
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "orders"
         indexes = [
@@ -101,13 +100,13 @@ class OrderItem(models.Model):
     )
 
     product = models.ForeignKey(
-        "catalog.Products",
+        "catalog.Product",
         on_delete=models.PROTECT,
         related_name="order_items",
     )
 
     variant = models.ForeignKey(
-        "catalog.Product_Variants",
+        "catalog.ProductVariant",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -139,6 +138,11 @@ class OrderItem(models.Model):
 
     class Meta:
         db_table = "order_items"
+        indexes = [
+            models.Index(fields=["order"], name="order_item_order_idx"),
+            models.Index(fields=["product"], name="order_item_product_idx"),
+            models.Index(fields=["variant"], name="order_item_variant_idx"),
+        ]
 
     def __str__(self):
         return f"{self.product_name} x {self.quantity}"
@@ -195,6 +199,13 @@ class Payment(models.Model):
 
     class Meta:
         db_table = "payments"
+        indexes = [
+            models.Index(fields=["order"], name="payment_order_idx"),
+            models.Index(fields=["status"], name="payment_status_idx"),
+            models.Index(
+                fields=["transaction_id"], name="payment_transaction_idx"
+            ),
+        ]
 
     def __str__(self):
         return f"Payment #{self.pk} - {self.status}"

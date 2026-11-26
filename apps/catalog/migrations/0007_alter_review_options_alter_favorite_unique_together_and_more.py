@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
             name='user',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='favorites', to=settings.AUTH_USER_MODEL),
         ),
-        # تمام AddIndexها از اینجا حذف شدند تا با 0001 تداخل نکنند
+        # Index additions are intentionally handled in a later migration.
         migrations.AddConstraint(
             model_name='favorite',
             constraint=models.UniqueConstraint(fields=('user', 'product'), name='unique_user_product_favorite'),

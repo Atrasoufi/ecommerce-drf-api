@@ -1,19 +1,12 @@
-from django.urls import path
-from .views.views import FAQViewSet
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-faq_list = FAQViewSet.as_view({
-    "get": "list",
-    "post": "create",
-})
+from .views import ContactMessageViewSet, FAQViewSet
 
-faq_detail = FAQViewSet.as_view({
-    "get": "retrieve",
-    "put": "update",
-    "patch": "partial_update",
-    "delete": "destroy",
-})
+router = DefaultRouter()
+router.register(r"faqs", FAQViewSet, basename="faq")
+router.register(
+    r"contact-messages", ContactMessageViewSet, basename="contactmessage"
+)
 
-urlpatterns = [
-    path("faqs/", faq_list, name="faq-list"),
-    path("faqs/<int:pk>/", faq_detail, name="faq-detail"),
-]
+urlpatterns = [path("", include(router.urls))]

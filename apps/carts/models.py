@@ -1,19 +1,20 @@
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
 
+from apps.core.models import TimeStampedModel
 
 
-class Cart(models.Model):
+class Cart(TimeStampedModel):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="cart",
     )
-    created_at =    models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "carts"
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"Cart #{self.pk} - {self.user}"
@@ -26,21 +27,30 @@ class CartItem(models.Model):
         related_name="items",
     )
     product = models.ForeignKey(
-        "catalog.Products",
+        "catalog.Product",
         on_delete=models.CASCADE,
         related_name="cart_items",
     )
     variant = models.ForeignKey(
-        "catalog.Product_Variants",
+        "catalog.ProductVariant",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name="cart_items",
     )
-    quantity = models.IntegerField(default=1)
+    quantity = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+    )
 
     class Meta:
         db_table = "cart_items"
+        ordering = ["id"]
+        indexes = [
+            models.Index(fields=["cart"], name="cart_item_cart_idx"),
+            models.Index(fields=["product"], name="cart_item_product_idx"),
+            models.Index(fields=["variant"], name="cart_item_variant_idx"),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["cart", "product", "variant"],
