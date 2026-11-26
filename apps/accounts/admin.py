@@ -11,7 +11,7 @@ class AddressAdmin(admin.ModelAdmin):
     list_display = ("id","user","province","city","postal_code","is_default","created_at",)
     list_filter = ("province","city","is_default",)
     search_fields = ("province","city","postal_code","address","user__email",)
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "updated_at")
 
 
 

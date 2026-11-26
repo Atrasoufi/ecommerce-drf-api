@@ -1,31 +1,12 @@
-from django.urls import path
-from .views.views import CartView, CartItemViewSet
+from django.urls import include, path
+from rest_framework.routers import SimpleRouter
 
-cart_item_list = CartItemViewSet.as_view({
-    "get": "list",
-    "post": "create",
-})
+from .views import CartItemViewSet, CartView
 
-cart_item_detail = CartItemViewSet.as_view({
-    "get": "retrieve",
-    "put": "update",
-    "patch": "partial_update",
-    "delete": "destroy",
-})
-
+router = SimpleRouter()
+router.register("items", CartItemViewSet, basename="cart-item")
 
 urlpatterns = [
     path("", CartView.as_view(), name="cart-detail"),
-
-    path(
-        "items/",
-        cart_item_list,
-        name="cart-item-list",
-    ),
-
-    path(
-        "items/<int:pk>/",
-        cart_item_detail,
-        name="cart-item-detail",
-    ),
+    path("", include(router.urls)),
 ]
