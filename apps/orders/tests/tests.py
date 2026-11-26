@@ -15,6 +15,8 @@ from apps.catalog.models import (
     Products,
 )
 from apps.orders.models import Order, OrderItem
+from apps.carts.models import Cart, CartItem
+from apps.orders.models import Payment
 
 
 User = get_user_model()
@@ -277,3 +279,109 @@ class OrderAPITestCase(TestCase):
         self.variant.refresh_from_db()
         self.assertEqual(self.order1.status, Order.Status.PENDING)
         self.assertEqual(self.variant.stock, initial_stock)
+class CreateOrderTestCase(OrderAPITestCase):
+    # آدرس endpoint ساخت سفارش
+    create_url = "/api/orders/create/"
+
+    def setUp(self):
+        super().setUp()
+
+        # ساخت سبد خرید برای کاربر
+        self.cart = Cart.objects.create(user=self.user1)
+
+        # اضافه کردن محصول به سبد خرید
+        CartItem.objects.create(
+            cart=self.cart,
+            product=self.variant.product,
+            variant=self.variant,
+            quantity=2,
+        )
+
+    def test_user_can_create_order_from_cart(self):
+        # احراز هویت کاربر
+        self.authenticate()
+
+        # ثبت سفارش با آدرس متعلق به کاربر
+        response = self.client.post(
+            self.create_url,
+            {"address": self.address1.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # بررسی ایجاد سفارش
+        order = Order.objects.get(id=response.data["order_id"])
+        self.assertEqual(order.user, self.user1)
+        self.assertEqual(order.total_price, Decimal("200.00"))
+
+        # بررسی ذخیره اطلاعات محصول در OrderItem
+        order_item = order.items.first()
+        self.assertEqual(order_item.product_name, "Test Product")
+        self.assertEqual(order_item.quantity, 2)
+        self.assertEqual(order_item.unit_price, Decimal("100.00"))
+
+        # بررسی کاهش موجودی از 10 به 8
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock, 8)
+
+        # بررسی خالی شدن سبد خرید
+        self.assertEqual(self.cart.items.count(), 0)
+
+        # بررسی ایجاد پرداخت اولیه
+        payment = order.payments.first()
+        self.assertIsNotNone(payment)
+        self.assertEqual(payment.method, Payment.Method.ONLINE)
+        self.assertEqual(payment.status, Payment.Status.PENDING)
+
+    def test_user_cannot_order_using_another_users_address(self):
+        # احراز هویت کاربر اول
+        self.authenticate()
+
+        # تلاش برای استفاده از آدرس کاربر دوم
+        response = self.client.post(
+            self.create_url,
+            {"address": self.address2.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_user_cannot_create_order_with_empty_cart(self):
+        # حذف آیتم‌های سبد خرید
+        self.cart.items.all().delete()
+
+        self.authenticate()
+
+        response = self.client.post(
+            self.create_url,
+            {"address": self.address1.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_user_cannot_create_order_with_insufficient_stock(self):
+        self.variant.stock = 1
+        self.variant.save(update_fields=["stock"])
+    
+        self.authenticate()
+    
+        response = self.client.post(
+            self.create_url,
+            {"address": self.address1.id},
+            format="json",
+        )
+    
+        # Order should not be created due to insufficient stock
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+        # Stock should not change (transaction rollback test)
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock, 1)
+    
+        # Cart should remain intact
+        self.assertEqual(self.cart.items.count(), 1)
+    
+        # No new order should be created
+        self.assertEqual(Order.objects.filter(user=self.user1).count(), 2)
